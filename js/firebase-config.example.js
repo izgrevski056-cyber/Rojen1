@@ -1,6 +1,5 @@
 /**
  * Copy to firebase-config.js and fill in your Firebase project values.
- * Firebase Console → Project settings → Your apps → Web app
  */
 export const firebaseConfig = {
   apiKey: 'YOUR_API_KEY',
@@ -11,9 +10,8 @@ export const firebaseConfig = {
   appId: 'YOUR_APP_ID'
 };
 
-/** Admin login email(s) — must match firestore.rules bootstrap email */
 export const ADMIN_EMAILS = [
-  'admin@rozhen1.bg'
+  'martin@rozhen1.bg'
 ];
 
 export function isFirebaseConfigured() {
@@ -22,5 +20,13 @@ export function isFirebaseConfigured() {
 
 export function isBootstrapAdminEmail(email) {
   if (!email) return false;
-  return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase());
+  const normalized = email.trim().toLowerCase();
+  return ADMIN_EMAILS.some(e => e.trim().toLowerCase() === normalized);
 }
+
+export default {
+  firebaseConfig,
+  ADMIN_EMAILS,
+  isFirebaseConfigured,
+  isBootstrapAdminEmail
+};

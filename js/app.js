@@ -81,6 +81,17 @@ function initAppShell(role) {
 }
 
 function init() {
+  window.addEventListener('error', (event) => {
+    const msg = event.message || 'Грешка при зареждане на приложението.';
+    const errEl = document.getElementById('auth-error');
+    if (errEl) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+    document.getElementById('auth-screen')?.classList.remove('hidden');
+    document.getElementById('loading-screen')?.classList.add('hidden');
+  });
+
   registerServiceWorker();
 
   initAuth({
