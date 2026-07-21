@@ -95,8 +95,8 @@ function init() {
   registerServiceWorker();
 
   initAuth({
-    onReady: (user, role) => {
-      if (user && role) initAppShell(role);
+    onReady: (session) => {
+      if (session) initAppShell(session.role);
     }
   });
 }

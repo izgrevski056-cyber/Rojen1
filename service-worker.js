@@ -1,13 +1,13 @@
-const CACHE_NAME = 'rozhen1-v4';
+const CACHE_NAME = 'rozhen1-v5';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
   './js/app.js',
   './js/auth.js',
+  './js/accounts.js',
   './js/firebase.js',
   './js/firebase-config.js',
-  './js/roles.js',
   './js/storage.js',
   './js/calculations.js',
   './js/views/daily.js',
@@ -39,7 +39,6 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) return;
   if (url.hostname.includes('firebaseio.com') || url.hostname.includes('firebaseapp.com')) return;
-  if (url.hostname.includes('cloudfunctions.net')) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {

@@ -1,8 +1,6 @@
 /**
  * Firebase project configuration — Rozhen 1
- * All exports below are required by firebase.js and roles.js
  */
-
 export const firebaseConfig = {
   apiKey: 'AIzaSyCPMZ9n0IumMyTXfyZXUBbwMFFl6CL8OUI',
   authDomain: 'rozhen1.firebaseapp.com',
@@ -13,11 +11,6 @@ export const firebaseConfig = {
   measurementId: 'G-DBE1ZHNYDD'
 };
 
-/** Admin login emails — must match firestore.rules bootstrap email */
-export const ADMIN_EMAILS = [
-  'martin@rozhen1.bg'
-];
-
 export function isFirebaseConfigured() {
   return Boolean(
     firebaseConfig.apiKey &&
@@ -26,16 +19,4 @@ export function isFirebaseConfigured() {
   );
 }
 
-export function isBootstrapAdminEmail(email) {
-  if (!email) return false;
-  const normalized = email.trim().toLowerCase();
-  return ADMIN_EMAILS.some(e => e.trim().toLowerCase() === normalized);
-}
-
-/** Convenience default export for tooling / future imports */
-export default {
-  firebaseConfig,
-  ADMIN_EMAILS,
-  isFirebaseConfigured,
-  isBootstrapAdminEmail
-};
+export default { firebaseConfig, isFirebaseConfigured };

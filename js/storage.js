@@ -9,6 +9,7 @@ import {
 import { getFirebaseDb } from './firebase.js';
 
 const LEGACY_STORAGE_KEY = 'rozhen1_data';
+const SESSION_KEY = 'rozhen1_session';
 
 export const DEFAULT_SETTINGS = {
   bonusPercent: 0.25,
@@ -19,7 +20,7 @@ export const DEFAULT_SETTINGS = {
 /** @typedef {{ id: string, clientName: string, amount: number, delivered: boolean, createdAt: string }} Delivery */
 /** @typedef {{ deliveries: Delivery[], updatedAt: string }} DayRecord */
 /** @typedef {{ bonusPercent: number, dailyAllowance: number, monthlyVoucher: number }} Settings */
-/** @typedef {{ role: 'admin' | 'driver', email: string, displayName?: string, disabled?: boolean }} UserProfile */
+/** @typedef {{ role: 'admin' | 'driver', username: string, displayName?: string, disabled?: boolean }} UserProfile */
 /** @typedef {{ settings: Settings, days: Record<string, DayRecord>, profile: UserProfile | null }} AppData */
 
 /** @type {string | null} */
@@ -29,7 +30,7 @@ let currentRole = null;
 let cache = getDefaultData();
 
 /** @type {string | null} */
-let currentUid = null;
+let currentUsername = null;
 
 /** @type {(() => void)[]} */
 const listeners = [];
@@ -37,7 +38,6 @@ const listeners = [];
 /** @type {(() => void)[]} */
 let unsubscribes = [];
 
-/** @returns {AppData} */
 function getDefaultData() {
   return {
     settings: { ...DEFAULT_SETTINGS },
@@ -59,7 +59,6 @@ export function onDataChange(fn) {
   };
 }
 
-/** @returns {AppData} */
 export function loadData() {
   return cache;
 }
@@ -69,31 +68,28 @@ export function getDay(dateKey) {
   return cache.days[dateKey] || { deliveries: [], updatedAt: new Date().toISOString() };
 }
 
-function userRef(uid) {
-  return doc(getFirebaseDb(), 'users', uid);
+function accountRef(username) {
+  return doc(getFirebaseDb(), 'accounts', username);
 }
 
-function dayRef(uid, dateKey) {
-  return doc(getFirebaseDb(), 'users', uid, 'days', dateKey);
+function dayRef(username, dateKey) {
+  return doc(getFirebaseDb(), 'accounts', username, 'days', dateKey);
 }
 
-function daysCollection(uid) {
-  return collection(getFirebaseDb(), 'users', uid, 'days');
+function daysCollection(username) {
+  return collection(getFirebaseDb(), 'accounts', username, 'days');
 }
 
 /**
- * @param {string} uid
+ * @param {string} username
  * @param {'admin' | 'driver'} role
- * @returns {Promise<void>}
  */
-export async function initUserStorage(uid, role) {
+export async function initUserStorage(username, role) {
   teardownStorage();
-  currentUid = uid;
+  currentUsername = username;
   currentRole = role;
   cache = getDefaultData();
-  cache.profile = { role, email: '' };
-
-  const db = getFirebaseDb();
+  cache.profile = { role, username, displayName: username };
 
   return new Promise((resolve, reject) => {
     let userReady = false;
@@ -103,34 +99,25 @@ export async function initUserStorage(uid, role) {
     const tryReady = () => {
       if (userReady && daysReady && !settled) {
         settled = true;
-        migrateLegacyLocalStorage(uid)
-          .then(resolve)
-          .catch(reject);
+        migrateLegacyLocalStorage(username).then(resolve).catch(reject);
       }
     };
 
     const userUnsub = onSnapshot(
-      userRef(uid),
+      accountRef(username),
       (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          cache.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-          cache.profile = {
-            role: data.role || role,
-            email: data.email || '',
-            displayName: data.displayName || '',
-            disabled: !!data.disabled
-          };
-        } else if (role === 'admin') {
-          setDoc(userRef(uid), {
-            role: 'admin',
-            settings: DEFAULT_SETTINGS,
-            createdAt: new Date().toISOString()
-          }).catch(reject);
-        } else {
-          reject(new Error('Липсва профил на шофьора.'));
+        if (!snap.exists()) {
+          reject(new Error('Липсва профил на потребителя.'));
           return;
         }
+        const data = snap.data();
+        cache.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
+        cache.profile = {
+          role: data.role || role,
+          username,
+          displayName: data.displayName || username,
+          disabled: !!data.disabled
+        };
         userReady = true;
         notify();
         tryReady();
@@ -139,9 +126,8 @@ export async function initUserStorage(uid, role) {
     );
 
     const daysUnsub = onSnapshot(
-      daysCollection(uid),
+      daysCollection(username),
       (snap) => {
-        /** @type {Record<string, DayRecord>} */
         const days = {};
         snap.forEach((dayDoc) => {
           const data = dayDoc.data();
@@ -165,7 +151,7 @@ export async function initUserStorage(uid, role) {
 export function teardownStorage() {
   unsubscribes.forEach(unsub => unsub());
   unsubscribes = [];
-  currentUid = null;
+  currentUsername = null;
   currentRole = null;
   cache = getDefaultData();
 }
@@ -174,38 +160,53 @@ export function getUserRole() {
   return currentRole;
 }
 
+export function getCurrentUsername() {
+  return currentUsername;
+}
+
 export function isAdmin() {
   return currentRole === 'admin';
 }
 
-/**
- * @param {string} uid
- * @returns {Promise<void>}
- */
-async function migrateLegacyLocalStorage(uid) {
+export function saveSession(session) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+async function migrateLegacyLocalStorage(username) {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return;
 
-    const daysSnap = await getDocs(daysCollection(uid));
+    const daysSnap = await getDocs(daysCollection(username));
     if (!daysSnap.empty) {
       localStorage.removeItem(LEGACY_STORAGE_KEY);
       return;
     }
 
     const parsed = JSON.parse(raw);
-    const db = getFirebaseDb();
-    const batch = writeBatch(db);
+    const batch = writeBatch(getFirebaseDb());
 
-    batch.set(userRef(uid), {
+    batch.set(accountRef(username), {
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
       migratedFromLocalStorage: true,
       migratedAt: new Date().toISOString()
     }, { merge: true });
 
-    const days = parsed.days || {};
-    for (const [dateKey, day] of Object.entries(days)) {
-      batch.set(dayRef(uid, dateKey), {
+    for (const [dateKey, day] of Object.entries(parsed.days || {})) {
+      batch.set(dayRef(username, dateKey), {
         deliveries: day.deliveries || [],
         updatedAt: day.updatedAt || new Date().toISOString()
       });
@@ -215,57 +216,50 @@ async function migrateLegacyLocalStorage(uid) {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
     notify();
   } catch {
-    // Migration is best-effort; cloud data remains source of truth.
+    // best-effort
   }
 }
 
 /** @param {Partial<Settings>} settings */
 export async function updateSettings(settings) {
-  if (!currentUid) throw new Error('Not signed in');
+  if (!currentUsername) throw new Error('Not signed in');
 
   const merged = { ...cache.settings, ...settings };
   cache.settings = merged;
   notify();
 
-  await setDoc(userRef(currentUid), { settings: merged }, { merge: true });
+  await setDoc(accountRef(currentUsername), { settings: merged }, { merge: true });
   return merged;
 }
 
 /** @param {string} dateKey */
 /** @param {DayRecord} dayRecord */
 export async function saveDay(dateKey, dayRecord) {
-  if (!currentUid) throw new Error('Not signed in');
+  if (!currentUsername) throw new Error('Not signed in');
 
-  const record = {
-    ...dayRecord,
-    updatedAt: new Date().toISOString()
-  };
-
+  const record = { ...dayRecord, updatedAt: new Date().toISOString() };
   cache.days[dateKey] = record;
   notify();
 
-  await setDoc(dayRef(currentUid, dateKey), record);
+  await setDoc(dayRef(currentUsername, dateKey), record);
 }
 
 export async function clearAllData() {
-  if (!currentUid) throw new Error('Not signed in');
+  if (!currentUsername) throw new Error('Not signed in');
 
-  const db = getFirebaseDb();
-  const daysSnap = await getDocs(daysCollection(currentUid));
-
-  const batch = writeBatch(db);
+  const daysSnap = await getDocs(daysCollection(currentUsername));
+  const batch = writeBatch(getFirebaseDb());
   daysSnap.forEach((dayDoc) => batch.delete(dayDoc.ref));
-  batch.set(userRef(currentUid), {
+  batch.set(accountRef(currentUsername), {
     settings: DEFAULT_SETTINGS,
     clearedAt: new Date().toISOString()
   }, { merge: true });
 
   await batch.commit();
-
   cache = getDefaultData();
   notify();
 }
 
 export function isStorageReady() {
-  return currentUid !== null;
+  return currentUsername !== null;
 }

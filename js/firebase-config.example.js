@@ -10,23 +10,8 @@ export const firebaseConfig = {
   appId: 'YOUR_APP_ID'
 };
 
-export const ADMIN_EMAILS = [
-  'martin@rozhen1.bg'
-];
-
 export function isFirebaseConfigured() {
   return !firebaseConfig.apiKey.includes('YOUR_');
 }
 
-export function isBootstrapAdminEmail(email) {
-  if (!email) return false;
-  const normalized = email.trim().toLowerCase();
-  return ADMIN_EMAILS.some(e => e.trim().toLowerCase() === normalized);
-}
-
-export default {
-  firebaseConfig,
-  ADMIN_EMAILS,
-  isFirebaseConfigured,
-  isBootstrapAdminEmail
-};
+export default { firebaseConfig, isFirebaseConfigured };
