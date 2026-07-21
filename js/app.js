@@ -1,17 +1,22 @@
-import { loadData, saveDay, getDay } from './storage.js';
-import { formatDisplayDate, todayKey, generateId } from './calculations.js';
+import { formatDisplayDate, todayKey } from './calculations.js';
 import { initDailyView, renderDailyView } from './views/daily.js';
 import { initArchiveView, renderArchiveView } from './views/archive.js';
 import { initSettingsView } from './views/settings.js';
-
-/** @typedef {{ onDateUpdate?: (dateKey: string) => void, onDeliveryAdded?: () => void }} DailyViewCallbacks */
+import { initAdminView, renderAdminView } from './views/admin.js';
+import { initAuth } from './auth.js';
+import { onDataChange } from './storage.js';
 
 let activeView = 'daily';
+let appInitialized = false;
+
+const VIEW_LABELS = {
+  daily: 'Дневен Курс',
+  archive: 'Месечен Архив',
+  admin: 'Админ Панел'
+};
 
 function initNavigation() {
-  const tabs = document.querySelectorAll('[data-view]');
-
-  tabs.forEach(tab => {
+  document.querySelectorAll('[data-view]').forEach(tab => {
     tab.addEventListener('click', () => {
       const view = tab.dataset.view;
       if (view === activeView) return;
@@ -20,15 +25,14 @@ function initNavigation() {
   });
 }
 
-/** @param {'daily' | 'archive'} view */
+/** @param {'daily' | 'archive' | 'admin'} view */
 function switchView(view) {
   activeView = view;
 
   document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
   document.getElementById(`view-${view}`)?.classList.remove('hidden');
 
-  const tabs = document.querySelectorAll('[role="tab"]');
-  tabs.forEach(tab => {
+  document.querySelectorAll('[role="tab"]').forEach(tab => {
     const isActive = tab.dataset.view === view;
     tab.setAttribute('aria-selected', String(isActive));
     tab.classList.toggle('border-success', isActive);
@@ -38,44 +42,18 @@ function switchView(view) {
     tab.classList.toggle('text-white/60', !isActive);
   });
 
-  const subtitle = document.getElementById('header-subtitle');
-  subtitle.textContent = view === 'daily' ? 'Дневен Курс' : 'Месечен Архив';
+  document.getElementById('header-subtitle').textContent = VIEW_LABELS[view] || '';
+  refreshActiveView();
+}
 
-  if (view === 'daily') renderDailyView();
-  else renderArchiveView();
+function refreshActiveView() {
+  if (activeView === 'daily') renderDailyView();
+  else if (activeView === 'archive') renderArchiveView();
+  else if (activeView === 'admin') renderAdminView();
 }
 
 function updateHeaderDate(dateKey) {
   document.getElementById('header-date').textContent = formatDisplayDate(dateKey);
-}
-
-function seedDemoDataIfEmpty() {
-  const data = loadData();
-  const dateKey = todayKey();
-
-  if (Object.keys(data.days).length > 0) return;
-
-  const demoDeliveries = [
-    { id: generateId(), clientName: 'Магазин „Слънце"', amount: 245.80, delivered: true, createdAt: new Date().toISOString() },
-    { id: generateId(), clientName: 'Ресторант „Родопи"', amount: 189.50, delivered: true, createdAt: new Date().toISOString() },
-    { id: generateId(), clientName: 'Хотел „Пампорovo"', amount: 412.00, delivered: false, createdAt: new Date().toISOString() },
-    { id: generateId(), clientName: 'Супермаркет „Кarma"', amount: 156.30, delivered: false, createdAt: new Date().toISOString() }
-  ];
-
-  saveDay(dateKey, { deliveries: demoDeliveries, updatedAt: new Date().toISOString() });
-
-  // Seed a few past days for archive demo
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-
-  saveDay(yKey, {
-    deliveries: [
-      { id: generateId(), clientName: 'Клиент А', amount: 320.00, delivered: true, createdAt: new Date().toISOString() },
-      { id: generateId(), clientName: 'Клиент Б', amount: 180.50, delivered: true, createdAt: new Date().toISOString() }
-    ],
-    updatedAt: new Date().toISOString()
-  });
 }
 
 function registerServiceWorker() {
@@ -84,28 +62,32 @@ function registerServiceWorker() {
   }
 }
 
-function init() {
-  seedDemoDataIfEmpty();
+function initAppShell(role) {
+  if (appInitialized) return;
+  appInitialized = true;
 
   initNavigation();
-
-  initDailyView({
-    onDateUpdate: updateHeaderDate,
-    onDeliveryAdded: () => {}
-  });
-
+  initDailyView({ onDateUpdate: updateHeaderDate, onDeliveryAdded: () => {} });
   initArchiveView();
+  initSettingsView({ onSaved: refreshActiveView });
 
-  initSettingsView({
-    onSaved: () => {
-      renderDailyView();
-      if (activeView === 'archive') renderArchiveView();
-    }
-  });
+  if (role === 'admin') {
+    initAdminView();
+  }
 
+  onDataChange(refreshActiveView);
   updateHeaderDate(todayKey());
   renderDailyView();
+}
+
+function init() {
   registerServiceWorker();
+
+  initAuth({
+    onReady: (user, role) => {
+      if (user && role) initAppShell(role);
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -1,3 +1,16 @@
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.border-3 {
+  border-width: 3px;
+}
+
 /* Safe area insets for notched phones */
 .pt-safe {
   padding-top: max(0.75rem, env(safe-area-inset-top));

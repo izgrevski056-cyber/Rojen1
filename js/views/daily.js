@@ -8,9 +8,7 @@ let callbacks = {};
 export function initDailyView(cb) {
   callbacks = cb;
 
-  const form = document.getElementById('form-add-delivery');
-  form?.addEventListener('submit', handleAddDelivery);
-
+  document.getElementById('form-add-delivery')?.addEventListener('submit', handleAddDelivery);
   document.getElementById('delivery-list')?.addEventListener('change', handleToggle);
   document.getElementById('delivery-list')?.addEventListener('click', handleDelete);
 }
@@ -19,8 +17,7 @@ export function renderDailyView() {
   const dateKey = todayKey();
   const data = loadData();
   const day = getDay(dateKey);
-  const settings = data.settings;
-  const summary = calcDaySummary(day.deliveries, settings);
+  const summary = calcDaySummary(day.deliveries, data.settings);
 
   renderDeliveryList(day.deliveries);
   updateSummaryBar(summary);
@@ -82,7 +79,7 @@ function updateSummaryBar(summary) {
   document.getElementById('sum-total').textContent = formatEUR(summary.total);
 }
 
-function handleAddDelivery(e) {
+async function handleAddDelivery(e) {
   e.preventDefault();
 
   const clientInput = document.getElementById('input-client');
@@ -104,44 +101,67 @@ function handleAddDelivery(e) {
     createdAt: new Date().toISOString()
   });
 
-  saveDay(dateKey, day);
-  clientInput.value = '';
-  amountInput.value = '';
-  clientInput.focus();
-
-  renderDailyView();
-  callbacks.onDeliveryAdded?.();
+  try {
+    await saveDay(dateKey, day);
+    clientInput.value = '';
+    amountInput.value = '';
+    clientInput.focus();
+    callbacks.onDeliveryAdded?.();
+  } catch (err) {
+    showToast(err.message || 'Грешка при запис.');
+  }
 }
 
-function handleToggle(e) {
+async function handleToggle(e) {
   if (e.target.dataset.action !== 'toggle') return;
 
   const id = e.target.dataset.id;
   const dateKey = todayKey();
   const day = getDay(dateKey);
-
   const delivery = day.deliveries.find(d => d.id === id);
   if (!delivery) return;
 
   delivery.delivered = e.target.checked;
-  saveDay(dateKey, day);
-  renderDailyView();
+
+  try {
+    await saveDay(dateKey, day);
+  } catch (err) {
+    e.target.checked = !e.target.checked;
+    showToast(err.message || 'Грешка при запис.');
+  }
 }
 
-function handleDelete(e) {
+async function handleDelete(e) {
   if (e.target.dataset.action !== 'delete') return;
 
   const id = e.target.dataset.id;
   const dateKey = todayKey();
   const day = getDay(dateKey);
-
   day.deliveries = day.deliveries.filter(d => d.id !== id);
-  saveDay(dateKey, day);
-  renderDailyView();
+
+  try {
+    await saveDay(dateKey, day);
+  } catch (err) {
+    showToast(err.message || 'Грешка при запис.');
+  }
 }
 
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  const inner = toast?.querySelector('div');
+  if (!inner) return;
+  inner.textContent = message;
+  toast.classList.add('show');
+  toast.classList.remove('hidden');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.classList.add('hidden'), 300);
+  }, 2500);
 }

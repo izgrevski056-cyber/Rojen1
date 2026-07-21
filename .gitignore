@@ -16,3 +16,4 @@ npm-debug.log*
 
 # Local dev servers
 node_modules/
+functions/node_modules/

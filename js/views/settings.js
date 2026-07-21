@@ -1,4 +1,5 @@
 import { loadData, updateSettings, clearAllData, DEFAULT_SETTINGS } from '../storage.js';
+import { handleLogout } from '../auth.js';
 
 /** @type {() => void} */
 let onSettingsSaved = () => {};
@@ -13,6 +14,10 @@ export function initSettingsView({ onSaved }) {
 
   document.getElementById('form-settings')?.addEventListener('submit', handleSave);
   document.getElementById('btn-reset-data')?.addEventListener('click', handleReset);
+  document.getElementById('btn-logout-settings')?.addEventListener('click', () => {
+    closeModal();
+    handleLogout();
+  });
 }
 
 function openModal() {
@@ -21,8 +26,7 @@ function openModal() {
   document.getElementById('setting-allowance').value = data.settings.dailyAllowance;
   document.getElementById('setting-voucher').value = data.settings.monthlyVoucher;
 
-  const modal = document.getElementById('modal-settings');
-  modal.classList.remove('hidden');
+  document.getElementById('modal-settings').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
 
@@ -31,7 +35,7 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-function handleSave(e) {
+async function handleSave(e) {
   e.preventDefault();
 
   const bonusPercent = parseFloat(document.getElementById('setting-bonus').value);
@@ -40,28 +44,36 @@ function handleSave(e) {
 
   if ([bonusPercent, dailyAllowance, monthlyVoucher].some(v => isNaN(v) || v < 0)) return;
 
-  updateSettings({ bonusPercent, dailyAllowance, monthlyVoucher });
-  closeModal();
-  onSettingsSaved();
-  showToast('Настройките са запазени');
+  try {
+    await updateSettings({ bonusPercent, dailyAllowance, monthlyVoucher });
+    closeModal();
+    onSettingsSaved();
+    showToast('Настройките са запазени');
+  } catch (err) {
+    showToast(err.message || 'Грешка при запис.');
+  }
 }
 
-function handleReset() {
+async function handleReset() {
   if (!confirm('Сигурни ли сте? Всички данни ще бъдат изтрити безвъзвратно.')) return;
 
-  clearAllData();
-  closeModal();
-  onSettingsSaved();
-  showToast('Данните са изчистени');
+  try {
+    await clearAllData();
+    closeModal();
+    onSettingsSaved();
+    showToast('Данните са изчистени');
+  } catch (err) {
+    showToast(err.message || 'Грешка при изтриване.');
+  }
 }
 
 function showToast(message) {
   const toast = document.getElementById('toast');
-  const inner = toast.querySelector('div');
+  const inner = toast?.querySelector('div');
+  if (!inner) return;
   inner.textContent = message;
   toast.classList.add('show');
   toast.classList.remove('hidden');
-
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => {
     toast.classList.remove('show');

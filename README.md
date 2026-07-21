@@ -1,87 +1,96 @@
 # Rozhen 1 — Delivery Driver App
 
-Mobile-first PWA for tracking daily deliveries, turnover, and salary calculations for **Rozhen 1** distribution drivers in Bulgaria.
+Mobile-first PWA for **Rozhen 1** distribution drivers in Bulgaria.
 
 ## Features
 
-- **Дневен Курс** — Add delivery stops, mark as delivered (green strike-through), live summary bar
-- **Месечен Архив** — Excel-style monthly table with totals and final payout (ЗА ПЛАЩАНЕ)
-- **Настройки** — Configurable bonus %, daily allowance (надник), monthly voucher
-- **Offline** — localStorage persistence + service worker caching
+- **Дневен Курс** — Daily deliveries with summary at page bottom
+- **Месечен Архив** — Monthly archive with clickable day details
+- **Firebase Auth** — Login only (no public registration)
+- **Admin Panel** — Create driver accounts, list drivers, reset passwords
+- **Cloud Firestore** — Real-time sync per user account
 
-## Quick Start
+## Roles
 
-Serve the folder over HTTP (required for ES modules and service worker):
+| Role | Access |
+|------|--------|
+| **Admin** | Admin tab + own delivery data (optional) |
+| **Driver** | Daily run + archive for own account only |
+
+Drivers cannot self-register. Only the admin creates accounts.
+
+## Firebase Setup
+
+### 1. Create project & enable services
+
+1. [Firebase Console](https://console.firebase.google.com) → create project
+2. **Authentication → Sign-in method → Email/Password** → Enable
+3. **Firestore Database** → Create (production mode)
+4. **Project settings → Web app** → copy config into `js/firebase-config.js`
+
+### 2. Configure admin email
+
+In **both** files, set your real admin email:
+
+- `js/firebase-config.js` → `ADMIN_EMAILS`
+- `firestore.rules` → bootstrap email in `allow create` rule
+
+### 3. Create admin Auth user
+
+Firebase Console → **Authentication → Users → Add user**
+
+Use the same email as in `ADMIN_EMAILS` and set a password.
+
+On first login, the app creates the admin Firestore profile automatically.
+
+### 4. Deploy rules & functions
 
 ```bash
-# Python
-python -m http.server 8080
+npm install -g firebase-tools
+firebase login
+firebase deploy --only firestore:rules,functions
+```
 
-# Node (npx)
+Password reset requires the **`adminResetPassword`** Cloud Function.
+
+### 5. Authorized domains
+
+Add your hosting domain under **Authentication → Settings → Authorized domains**.
+
+## Admin workflow
+
+1. Log in with your admin account
+2. Open the **Админ** tab
+3. **Създай шофьор** — enter name, email, password
+4. Share credentials with the driver
+5. **Смени парола** / **Деактивирай** as needed
+
+## Firestore structure
+
+```
+users/{uid}
+  role: "admin" | "driver"
+  email, displayName, settings, disabled, createdAt
+
+users/{uid}/days/{YYYY-MM-DD}
+  deliveries: [...]
+  updatedAt
+```
+
+## Quick Start (local)
+
+```bash
 npx serve .
 ```
 
-Open `http://localhost:8080` on your phone or desktop.
-
-## Default Settings
-
-| Setting | Default |
-|---------|---------|
-| Bonus % | 0.25% of daily turnover |
-| Daily allowance (Надник) | 33.16 € |
-| Monthly voucher | 100 € |
-
-**Daily total** = Bonus + Allowance  
-**Monthly payout** = Sum of daily totals + Voucher
-
-## Project Structure
-
-```
-├── index.html          # App shell & views
-├── css/styles.css      # Custom styles (toggle, animations)
-├── js/
-│   ├── app.js          # Entry point, navigation
-│   ├── storage.js      # localStorage (Firebase-ready adapter)
-│   ├── calculations.js # Turnover & salary math
-│   └── views/
-│       ├── daily.js    # Daily run screen
-│       ├── archive.js  # Monthly archive
-│       └── settings.js # Settings modal
-├── manifest.json       # PWA manifest
-├── service-worker.js   # Offline cache
-└── icons/              # App icons
-```
-
-## Firebase Migration
-
-Replace the storage adapter in `js/storage.js`:
-
-```javascript
-import { setAdapter } from './storage.js';
-import { firebaseAdapter } from './firebase.js';
-
-setAdapter(firebaseAdapter);
-```
-
-Implement `load()` and `save(data)` on the adapter to sync with Firestore.
-
-## Install as PWA
-
-On Android Chrome: Menu → "Add to Home screen"  
-On iOS Safari: Share → "Add to Home Screen"
-
 ## Deploy
 
-### GitHub Pages (automatic)
+- **GitHub Pages** — push to `main` (see `.github/workflows/deploy-pages.yml`)
+- **Netlify** — import repo (`netlify.toml` included)
 
-Every push to `main` triggers the GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) and publishes the site.
+## Security notes
 
-1. In the repo on GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**
-2. After the first successful workflow run, the live URL appears under **Settings → Pages** (typically `https://<username>.github.io/rozhen1/`)
-
-### Netlify (optional)
-
-1. Go to [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**
-2. Connect the GitHub repo
-3. Netlify reads `netlify.toml` automatically — no build command needed
-4. Deploy
+- Disable public registration is enforced in app logic (`ensureUserProfile`)
+- Firestore rules prevent drivers from reading other users' data
+- Only admins can create driver profiles or list all drivers
+- Password changes for other users require the Cloud Function (Admin SDK)
