@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rozhen1-v6';
+const CACHE_NAME = 'rozhen1-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './js/app.js',
   './js/auth.js',
   './js/accounts.js',
+  './js/regions.js',
   './js/firebase.js',
   './js/firebase-config.js',
   './js/storage.js',

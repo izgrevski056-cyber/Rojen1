@@ -1,5 +1,12 @@
 import { loadData, saveDay, getDay } from '../storage.js';
 import { calcDaySummary, formatEUR, todayKey, generateId } from '../calculations.js';
+import {
+  DEFAULT_REGIONS,
+  OTHER_REGION_VALUE,
+  LAST_REGION_KEY,
+  groupDeliveriesByRegion,
+  isAllRegionsComplete
+} from '../regions.js';
 
 /** @type {import('../app.js').DailyViewCallbacks} */
 let callbacks = {};
@@ -8,6 +15,8 @@ let callbacks = {};
 export function initDailyView(cb) {
   callbacks = cb;
 
+  populateRegionSelect();
+  document.getElementById('input-region')?.addEventListener('change', handleRegionSelectChange);
   document.getElementById('form-add-delivery')?.addEventListener('submit', handleAddDelivery);
   document.getElementById('delivery-list')?.addEventListener('change', handleToggle);
   document.getElementById('delivery-list')?.addEventListener('click', handleDelete);
@@ -18,22 +27,116 @@ export function renderDailyView() {
   const data = loadData();
   const day = getDay(dateKey);
   const summary = calcDaySummary(day.deliveries, data.settings);
+  const groups = groupDeliveriesByRegion(day.deliveries);
 
-  renderDeliveryList(day.deliveries);
+  renderRegionProgress(groups);
+  renderDeliveryList(groups);
   updateSummaryBar(summary);
   callbacks.onDateUpdate?.(dateKey);
 }
 
-function renderDeliveryList(deliveries) {
+function populateRegionSelect() {
+  const select = document.getElementById('input-region');
+  const otherInput = document.getElementById('input-region-other');
+  if (!select) return;
+
+  const lastRegion = sessionStorage.getItem(LAST_REGION_KEY) || '';
+  select.innerHTML = '<option value="">— Изберете район —</option>';
+
+  for (const region of DEFAULT_REGIONS) {
+    const opt = document.createElement('option');
+    opt.value = region;
+    opt.textContent = region;
+    select.appendChild(opt);
+  }
+
+  const otherOpt = document.createElement('option');
+  otherOpt.value = OTHER_REGION_VALUE;
+  otherOpt.textContent = 'Други…';
+  select.appendChild(otherOpt);
+
+  if (lastRegion && [...select.options].some(o => o.value === lastRegion)) {
+    select.value = lastRegion;
+  } else if (lastRegion) {
+    select.value = OTHER_REGION_VALUE;
+    otherInput.value = lastRegion;
+    otherInput.classList.remove('hidden');
+    otherInput.required = true;
+  }
+
+  handleRegionSelectChange();
+}
+
+function handleRegionSelectChange() {
+  const select = document.getElementById('input-region');
+  const otherInput = document.getElementById('input-region-other');
+  if (!select || !otherInput) return;
+
+  const isOther = select.value === OTHER_REGION_VALUE;
+  otherInput.classList.toggle('hidden', !isOther);
+  otherInput.required = isOther;
+  if (isOther) otherInput.focus();
+}
+
+/** @param {import('../regions.js').RegionGroup[]} groups */
+function renderRegionProgress(groups) {
+  const container = document.getElementById('region-progress');
+  if (!container) return;
+
+  if (!groups.length) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  const allDone = isAllRegionsComplete(groups);
+
+  container.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-card border border-navy/5 p-3">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-bold text-navy uppercase tracking-wide">Прогрес по райони</p>
+        ${allDone ? '<span class="text-xs font-semibold text-success-dark">✓ Всички готови</span>' : ''}
+      </div>
+      <div class="region-progress-grid">
+        ${groups.map(g => renderRegionProgressCard(g)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/** @param {import('../regions.js').RegionGroup} group */
+function renderRegionProgressCard(group) {
+  const pct = group.total ? Math.round((group.delivered / group.total) * 100) : 0;
+  const complete = group.delivered === group.total;
+
+  return `
+    <div class="region-progress-card ${complete ? 'region-progress-card--done' : ''}">
+      <div class="flex items-center justify-between gap-2 mb-1.5">
+        <span class="text-xs font-semibold text-navy truncate">${escapeHtml(group.region)}</span>
+        <span class="text-xs font-bold shrink-0 ${complete ? 'text-success-dark' : 'text-slate-500'}">
+          ${complete ? '✓' : ''} ${group.delivered}/${group.total}
+        </span>
+      </div>
+      <div class="region-progress-track" aria-hidden="true">
+        <div class="region-progress-fill ${complete ? 'region-progress-fill--done' : ''}" style="width: ${pct}%"></div>
+      </div>
+    </div>
+  `;
+}
+
+/** @param {import('../regions.js').RegionGroup[]} groups */
+function renderDeliveryList(groups) {
   const list = document.getElementById('delivery-list');
   const empty = document.getElementById('empty-deliveries');
   const count = document.getElementById('delivery-count');
+  const totalStops = groups.reduce((sum, g) => sum + g.total, 0);
 
   if (!list) return;
 
-  count.textContent = String(deliveries.length);
+  count.textContent = String(totalStops);
 
-  if (deliveries.length === 0) {
+  if (!totalStops) {
     list.innerHTML = '';
     empty?.classList.remove('hidden');
     return;
@@ -41,35 +144,57 @@ function renderDeliveryList(deliveries) {
 
   empty?.classList.add('hidden');
 
-  list.innerHTML = deliveries.map(d => `
-    <li>
-      <article class="delivery-card ${d.delivered ? 'delivered' : 'bg-white'} rounded-2xl shadow-card p-4 border border-navy/5 transition-all duration-300"
-        data-id="${d.id}">
-        <div class="flex items-center gap-3">
-          <div class="flex-1 min-w-0">
-            <h3 class="delivery-name font-semibold text-navy truncate">${escapeHtml(d.clientName)}</h3>
-            <p class="delivery-amount text-lg font-bold mt-0.5 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
-          </div>
-          <label class="toggle-switch" aria-label="Маркирай като доставено">
-            <input type="checkbox" ${d.delivered ? 'checked' : ''} data-action="toggle" data-id="${d.id}">
-            <span class="toggle-slider"></span>
-          </label>
+  list.innerHTML = groups.map(g => `
+    <li class="region-block">
+      <div class="region-header ${g.delivered === g.total ? 'region-header--done' : ''}">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="region-header-icon" aria-hidden="true">📍</span>
+          <span class="font-bold text-sm uppercase tracking-wide truncate">${escapeHtml(g.region)}</span>
         </div>
-        ${d.delivered ? `
-          <div class="mt-2 flex items-center gap-1.5 text-success-dark text-xs font-medium">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-            </svg>
-            Доставено
-          </div>
-        ` : ''}
-        <button type="button" data-action="delete" data-id="${d.id}"
-          class="mt-2 text-xs text-slate-400 hover:text-red-500 transition-colors">
-          Премахни
-        </button>
-      </article>
+        <span class="region-header-count ${g.delivered === g.total ? 'text-success-dark' : 'text-slate-500'}">
+          ${g.delivered === g.total ? '✓ ' : ''}${g.delivered}/${g.total}
+        </span>
+      </div>
+      <ul class="space-y-2 mt-2">
+        ${g.deliveries.map(d => `
+          <li>
+            ${renderDeliveryCard(d)}
+          </li>
+        `).join('')}
+      </ul>
     </li>
   `).join('');
+}
+
+/** @param {import('../storage.js').Delivery} d */
+function renderDeliveryCard(d) {
+  return `
+    <article class="delivery-card ${d.delivered ? 'delivered' : 'bg-white'} rounded-2xl shadow-card p-4 border border-navy/5 transition-all duration-300"
+      data-id="${d.id}">
+      <div class="flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <h3 class="delivery-name font-semibold text-navy truncate">${escapeHtml(d.clientName)}</h3>
+          <p class="delivery-amount text-lg font-bold mt-0.5 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
+        </div>
+        <label class="toggle-switch" aria-label="Маркирай като доставено">
+          <input type="checkbox" ${d.delivered ? 'checked' : ''} data-action="toggle" data-id="${d.id}">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      ${d.delivered ? `
+        <div class="mt-2 flex items-center gap-1.5 text-success-dark text-xs font-medium">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Доставено
+        </div>
+      ` : ''}
+      <button type="button" data-action="delete" data-id="${d.id}"
+        class="mt-2 text-xs text-slate-400 hover:text-red-500 transition-colors">
+        Премахни
+      </button>
+    </article>
+  `;
 }
 
 function updateSummaryBar(summary) {
@@ -79,15 +204,32 @@ function updateSummaryBar(summary) {
   document.getElementById('sum-total').textContent = formatEUR(summary.total);
 }
 
+function getSelectedRegion() {
+  const select = document.getElementById('input-region');
+  const otherInput = document.getElementById('input-region-other');
+  if (!select?.value) return '';
+
+  if (select.value === OTHER_REGION_VALUE) {
+    return otherInput?.value.trim() || '';
+  }
+
+  return select.value;
+}
+
 async function handleAddDelivery(e) {
   e.preventDefault();
 
   const clientInput = document.getElementById('input-client');
   const amountInput = document.getElementById('input-amount');
+  const region = getSelectedRegion();
 
   const clientName = clientInput.value.trim();
   const amount = parseFloat(amountInput.value);
 
+  if (!region) {
+    showToast('Изберете район.');
+    return;
+  }
   if (!clientName || isNaN(amount) || amount < 0) return;
 
   const dateKey = todayKey();
@@ -97,12 +239,14 @@ async function handleAddDelivery(e) {
     id: generateId(),
     clientName,
     amount,
+    region,
     delivered: false,
     createdAt: new Date().toISOString()
   });
 
   try {
     await saveDay(dateKey, day);
+    sessionStorage.setItem(LAST_REGION_KEY, region);
     clientInput.value = '';
     amountInput.value = '';
     clientInput.focus();

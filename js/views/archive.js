@@ -7,6 +7,7 @@ import {
   formatMonthLabel,
   formatDisplayDate
 } from '../calculations.js';
+import { groupDeliveriesByRegion } from '../regions.js';
 
 let currentYear;
 let currentMonth;
@@ -146,15 +147,25 @@ function openDayDetail(dateKey) {
   if (!day.deliveries.length) {
     list.innerHTML = `<li class="text-center text-slate-400 text-sm py-6">Няма записани доставки</li>`;
   } else {
-    list.innerHTML = day.deliveries.map(d => `
-      <li class="day-detail-item ${d.delivered ? 'delivered' : 'bg-cream'} rounded-xl p-3 border border-navy/5 flex items-center justify-between gap-3">
-        <div class="min-w-0">
-          <p class="day-detail-client font-medium text-navy truncate">${escapeHtml(d.clientName)}</p>
-          ${d.delivered
-            ? '<p class="text-xs text-success-dark font-medium mt-0.5">Доставено</p>'
-            : '<p class="text-xs text-slate-400 mt-0.5">Недоставено</p>'}
-        </div>
-        <p class="day-detail-amount font-bold shrink-0 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
+    const groups = groupDeliveriesByRegion(day.deliveries);
+    list.innerHTML = groups.map(g => `
+      <li class="mb-3 last:mb-0">
+        <p class="text-xs font-bold text-navy uppercase tracking-wide mb-2 px-1">
+          ${escapeHtml(g.region)} · ${g.delivered}/${g.total}
+        </p>
+        <ul class="space-y-2">
+          ${g.deliveries.map(d => `
+            <li class="day-detail-item ${d.delivered ? 'delivered' : 'bg-cream'} rounded-xl p-3 border border-navy/5 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="day-detail-client font-medium text-navy truncate">${escapeHtml(d.clientName)}</p>
+                ${d.delivered
+                  ? '<p class="text-xs text-success-dark font-medium mt-0.5">Доставено</p>'
+                  : '<p class="text-xs text-slate-400 mt-0.5">Недоставено</p>'}
+              </div>
+              <p class="day-detail-amount font-bold shrink-0 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
+            </li>
+          `).join('')}
+        </ul>
       </li>
     `).join('');
   }
