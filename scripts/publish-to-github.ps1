@@ -19,7 +19,7 @@ if (git remote get-url origin 2>$null) {
   Write-Host "Remote 'origin' already exists." -ForegroundColor Yellow
 } else {
   Write-Host "Creating GitHub repo $username/$repoName ..." -ForegroundColor Cyan
-  gh repo create $repoName --public --source=. --remote=origin --description "Rozhen 1 delivery driver PWA — daily deliveries, turnover & salary tracking"
+  gh repo create $repoName --public --source=. --remote=origin --description 'Rozhen 1 delivery driver PWA - daily deliveries, turnover and salary tracking'
 }
 
 Write-Host "Pushing to GitHub..." -ForegroundColor Cyan
