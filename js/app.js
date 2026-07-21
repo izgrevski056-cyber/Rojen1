@@ -27,8 +27,6 @@ function switchView(view) {
   document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
   document.getElementById(`view-${view}`)?.classList.remove('hidden');
 
-  document.body.classList.toggle('view-archive', view === 'archive');
-
   const tabs = document.querySelectorAll('[role="tab"]');
   tabs.forEach(tab => {
     const isActive = tab.dataset.view === view;

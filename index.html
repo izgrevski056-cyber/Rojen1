@@ -91,7 +91,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto pb-44">
+    <main class="flex-1 overflow-y-auto pb-6">
 
       <!-- Daily Run View -->
       <section id="view-daily" class="view-panel px-4 pt-4 space-y-4" aria-label="Дневен курс">
@@ -138,6 +138,31 @@
             <p class="text-slate-400 text-xs mt-1">Добавете първата доставка по-горе</p>
           </div>
         </div>
+
+        <!-- Daily Summary (bottom of page) -->
+        <aside id="summary-bar" class="mt-6 pb-safe">
+          <div class="bg-white rounded-2xl shadow-card border border-navy/10 p-4">
+            <h2 class="text-xs font-bold text-navy uppercase tracking-wide mb-3">Обобщение за деня</h2>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-500">Дневен Оборот</span>
+                <span id="sum-turnover" class="font-bold text-navy">0.00 €</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Бонус</span>
+                <span id="sum-bonus" class="font-semibold text-accent-amber">0.00 €</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Надник</span>
+                <span id="sum-allowance" class="font-semibold text-slate-700">0.00 €</span>
+              </div>
+              <div class="flex justify-between items-center col-span-2 pt-2 mt-1 border-t border-slate-100">
+                <span class="text-slate-600 font-medium">Общо за деня</span>
+                <span id="sum-total" class="font-bold text-lg text-success">0.00 €</span>
+              </div>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <!-- Monthly Archive View -->
@@ -157,6 +182,8 @@
             </svg>
           </button>
         </div>
+
+        <p class="text-xs text-slate-500 mb-3 px-1">Докоснете ред за детайли по доставките</p>
 
         <div class="bg-white rounded-2xl shadow-card overflow-hidden border border-navy/5">
           <div class="overflow-x-auto">
@@ -184,32 +211,30 @@
       </section>
     </main>
 
-    <!-- Sticky Summary Bar (Daily view only) -->
-    <aside id="summary-bar" class="fixed bottom-16 left-0 right-0 max-w-lg mx-auto z-30 px-4">
-      <div class="bg-white rounded-2xl shadow-bar border border-navy/10 p-4">
-        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-slate-500">Дневен Оборот</span>
-            <span id="sum-turnover" class="font-bold text-navy">0.00 €</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">Бонус</span>
-            <span id="sum-bonus" class="font-semibold text-accent-amber">0.00 €</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">Надник</span>
-            <span id="sum-allowance" class="font-semibold text-slate-700">0.00 €</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 font-medium">Общо за деня</span>
-            <span id="sum-total" class="font-bold text-lg text-success">0.00 €</span>
-          </div>
-        </div>
-      </div>
-    </aside>
+  </div>
 
-    <!-- Bottom Nav Spacer -->
-    <div class="h-16"></div>
+  <!-- Day Detail Modal -->
+  <div id="modal-day-detail" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="day-detail-title">
+    <div id="day-detail-backdrop" class="absolute inset-0 bg-navy/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-x-0 bottom-0 max-w-lg mx-auto animate-slide-up">
+      <div class="bg-white rounded-t-3xl shadow-2xl p-6 pb-safe max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-1">
+          <h2 id="day-detail-title" class="text-lg font-bold text-navy">Детайли за деня</h2>
+          <button id="btn-close-day-detail" type="button" aria-label="Затвори"
+            class="w-9 h-9 rounded-xl bg-cream hover:bg-cream-dark flex items-center justify-center text-slate-500 active:scale-95 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <p id="day-detail-date" class="text-sm text-slate-500 mb-4"></p>
+
+        <div id="day-detail-summary" class="grid grid-cols-2 gap-2 mb-4"></div>
+
+        <h3 class="text-sm font-bold text-navy mb-2">Доставки и фактури</h3>
+        <ul id="day-detail-deliveries" class="space-y-2"></ul>
+      </div>
+    </div>
   </div>
 
   <!-- Settings Modal -->

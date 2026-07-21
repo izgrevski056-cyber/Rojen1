@@ -1,5 +1,12 @@
-import { loadData } from '../storage.js';
-import { calcMonthSummary, formatEUR, formatShortDate, formatMonthLabel } from '../calculations.js';
+import { loadData, getDay } from '../storage.js';
+import {
+  calcDaySummary,
+  calcMonthSummary,
+  formatEUR,
+  formatShortDate,
+  formatMonthLabel,
+  formatDisplayDate
+} from '../calculations.js';
 
 let currentYear;
 let currentMonth;
@@ -30,6 +37,11 @@ export function initArchiveView() {
     }
     renderArchiveView();
   });
+
+  document.getElementById('archive-table-body')?.addEventListener('click', handleRowClick);
+  document.getElementById('archive-table-body')?.addEventListener('keydown', handleRowKeydown);
+  document.getElementById('btn-close-day-detail')?.addEventListener('click', closeDayDetail);
+  document.getElementById('day-detail-backdrop')?.addEventListener('click', closeDayDetail);
 }
 
 export function renderArchiveView() {
@@ -60,7 +72,8 @@ function renderTable(rows) {
   }
 
   tbody.innerHTML = rows.map(row => `
-    <tr class="border-b border-slate-100">
+    <tr class="archive-row border-b border-slate-100" tabindex="0" role="button"
+      data-date-key="${row.dateKey}" aria-label="Детайли за ${formatShortDate(row.dateKey)}">
       <td class="py-2.5 px-3 font-medium text-navy">${formatShortDate(row.dateKey)}</td>
       <td class="py-2.5 px-2 text-right">${formatEUR(row.turnover)}</td>
       <td class="py-2.5 px-2 text-right text-accent-amber">${formatEUR(row.bonus)}</td>
@@ -87,6 +100,78 @@ function renderTable(rows) {
       <td class="py-3 px-2 text-right">${formatEUR(totals.allowance)}</td>
       <td class="py-3 px-3 text-right text-success-dark">${formatEUR(totals.total)}</td>
     </tr>`;
+}
+
+function handleRowClick(e) {
+  const row = e.target.closest('.archive-row');
+  if (!row) return;
+  openDayDetail(row.dataset.dateKey);
+}
+
+function handleRowKeydown(e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const row = e.target.closest('.archive-row');
+  if (!row) return;
+  e.preventDefault();
+  openDayDetail(row.dataset.dateKey);
+}
+
+function openDayDetail(dateKey) {
+  const data = loadData();
+  const day = getDay(dateKey);
+  const summary = calcDaySummary(day.deliveries, data.settings);
+
+  document.getElementById('day-detail-date').textContent = formatDisplayDate(dateKey);
+
+  document.getElementById('day-detail-summary').innerHTML = `
+    <div class="bg-cream rounded-xl p-3 border border-navy/5">
+      <p class="text-xs text-slate-500">Оборот</p>
+      <p class="font-bold text-navy">${formatEUR(summary.turnover)}</p>
+    </div>
+    <div class="bg-cream rounded-xl p-3 border border-navy/5">
+      <p class="text-xs text-slate-500">Бонус</p>
+      <p class="font-semibold text-accent-amber">${formatEUR(summary.bonus)}</p>
+    </div>
+    <div class="bg-cream rounded-xl p-3 border border-navy/5">
+      <p class="text-xs text-slate-500">Надник</p>
+      <p class="font-semibold text-slate-700">${formatEUR(summary.allowance)}</p>
+    </div>
+    <div class="bg-success-light rounded-xl p-3 border border-success/20">
+      <p class="text-xs text-success-dark">Общо</p>
+      <p class="font-bold text-success-dark">${formatEUR(summary.total)}</p>
+    </div>`;
+
+  const list = document.getElementById('day-detail-deliveries');
+
+  if (!day.deliveries.length) {
+    list.innerHTML = `<li class="text-center text-slate-400 text-sm py-6">Няма записани доставки</li>`;
+  } else {
+    list.innerHTML = day.deliveries.map(d => `
+      <li class="day-detail-item ${d.delivered ? 'delivered' : 'bg-cream'} rounded-xl p-3 border border-navy/5 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="day-detail-client font-medium text-navy truncate">${escapeHtml(d.clientName)}</p>
+          ${d.delivered
+            ? '<p class="text-xs text-success-dark font-medium mt-0.5">Доставено</p>'
+            : '<p class="text-xs text-slate-400 mt-0.5">Недоставено</p>'}
+        </div>
+        <p class="day-detail-amount font-bold shrink-0 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
+      </li>
+    `).join('');
+  }
+
+  document.getElementById('modal-day-detail').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDayDetail() {
+  document.getElementById('modal-day-detail').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function renderSummaryCards(summary) {

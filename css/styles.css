@@ -87,13 +87,41 @@
   animation: slide-up 0.3s ease-out;
 }
 
-/* Archive table zebra & hover */
-#archive-table-body tr:nth-child(even) {
+/* Archive table zebra & clickable rows */
+#archive-table-body tr.archive-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+#archive-table-body tr.archive-row:nth-child(even) {
   background-color: rgba(244, 241, 234, 0.6);
 }
 
-#archive-table-body tr:hover {
-  background-color: rgba(30, 58, 95, 0.04);
+#archive-table-body tr.archive-row:hover,
+#archive-table-body tr.archive-row:focus-visible {
+  background-color: rgba(30, 58, 95, 0.08);
+}
+
+#archive-table-body tr.archive-row:active {
+  background-color: rgba(30, 58, 95, 0.12);
+}
+
+#archive-table-body tr.archive-row td:first-child::after {
+  content: ' ›';
+  color: rgba(30, 58, 95, 0.35);
+  font-weight: 600;
+}
+
+/* Day detail delivery items */
+.day-detail-item.delivered {
+  background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.day-detail-item.delivered .day-detail-client,
+.day-detail-item.delivered .day-detail-amount {
+  text-decoration: line-through;
+  color: #15803d;
 }
 
 /* Toast animation */
@@ -122,13 +150,4 @@
 ::-webkit-scrollbar-thumb {
   background: rgba(30, 58, 95, 0.2);
   border-radius: 4px;
-}
-
-/* Hide summary bar when on archive view */
-body.view-archive #summary-bar {
-  display: none;
-}
-
-body.view-archive main {
-  padding-bottom: 2rem;
 }
