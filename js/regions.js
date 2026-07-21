@@ -13,6 +13,65 @@ export const OTHER_REGION_VALUE = '__other__';
 export const LAST_REGION_KEY = 'rozhen1_last_region';
 export const NO_REGION_LABEL = 'Без район';
 
+/**
+ * @param {HTMLSelectElement | null} select
+ * @param {HTMLInputElement | null} otherInput
+ * @param {{ lastRegion?: string }} [options]
+ */
+export function fillRegionSelect(select, otherInput, options = {}) {
+  if (!select) return;
+
+  const lastRegion = options.lastRegion ?? sessionStorage.getItem(LAST_REGION_KEY) ?? '';
+  select.innerHTML = '<option value="">— Изберете район —</option>';
+
+  for (const region of DEFAULT_REGIONS) {
+    const opt = document.createElement('option');
+    opt.value = region;
+    opt.textContent = region;
+    select.appendChild(opt);
+  }
+
+  const otherOpt = document.createElement('option');
+  otherOpt.value = OTHER_REGION_VALUE;
+  otherOpt.textContent = 'Други…';
+  select.appendChild(otherOpt);
+
+  if (lastRegion && [...select.options].some(o => o.value === lastRegion)) {
+    select.value = lastRegion;
+  } else if (lastRegion && otherInput) {
+    select.value = OTHER_REGION_VALUE;
+    otherInput.value = lastRegion;
+  }
+
+  syncRegionOtherVisibility(select, otherInput);
+}
+
+/**
+ * @param {HTMLSelectElement | null} select
+ * @param {HTMLInputElement | null} otherInput
+ */
+export function syncRegionOtherVisibility(select, otherInput) {
+  if (!select || !otherInput) return;
+
+  const isOther = select.value === OTHER_REGION_VALUE;
+  otherInput.classList.toggle('hidden', !isOther);
+  otherInput.required = isOther;
+}
+
+/**
+ * @param {HTMLSelectElement | null} select
+ * @param {HTMLInputElement | null} otherInput
+ */
+export function getRegionFromSelect(select, otherInput) {
+  if (!select?.value) return '';
+
+  if (select.value === OTHER_REGION_VALUE) {
+    return otherInput?.value.trim() || '';
+  }
+
+  return select.value;
+}
+
 /** @param {string | undefined | null} region */
 export function normalizeRegionLabel(region) {
   const trimmed = (region || '').trim();

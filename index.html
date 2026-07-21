@@ -180,6 +180,23 @@
               Добави спирка
             </button>
           </form>
+
+          <div class="border-t border-slate-100 pt-3 mt-3">
+            <p class="text-xs text-slate-500 mb-2 flex items-center gap-1.5">
+              <span class="px-1.5 py-0.5 rounded-md bg-accent-amber/15 text-accent-amber font-semibold text-[10px] uppercase">AI</span>
+              Експеримент — разчита фактура от снимка
+            </p>
+            <button type="button" id="btn-scan-invoice"
+              class="w-full py-3 rounded-xl border-2 border-dashed border-navy/20 bg-cream/40 text-navy font-semibold text-sm hover:bg-cream hover:border-navy/35 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <svg class="w-5 h-5 text-navy/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Снимай фактура
+            </button>
+            <input type="file" id="input-invoice-photo" accept="image/*" capture="environment" class="hidden">
+          </div>
         </div>
 
         <!-- Delivery List -->
@@ -341,6 +358,60 @@
 
         <h3 class="text-sm font-bold text-navy mb-2">Доставки и фактури</h3>
         <ul id="day-detail-deliveries" class="space-y-2"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Scan Modal -->
+  <div id="modal-invoice-scan" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="scan-modal-title">
+    <div id="scan-backdrop" class="absolute inset-0 bg-navy/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-x-0 bottom-0 max-w-lg mx-auto animate-slide-up">
+      <div class="bg-white rounded-t-3xl shadow-2xl p-6 pb-safe max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-3">
+          <h2 id="scan-modal-title" class="text-lg font-bold text-navy">Разчитане на фактура</h2>
+          <button id="btn-close-scan" type="button" aria-label="Затвори"
+            class="w-9 h-9 rounded-xl bg-cream hover:bg-cream-dark flex items-center justify-center text-slate-500 active:scale-95 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <img id="scan-preview" alt="Снимка на фактура" class="hidden w-full max-h-40 object-contain rounded-xl border border-slate-200 bg-cream mb-4">
+
+        <div id="scan-loading" class="scan-loading py-8">
+          <div class="w-10 h-10 mx-auto mb-3 rounded-full border-3 border-navy/20 border-t-navy animate-spin"></div>
+          <p class="text-center text-sm text-slate-500">AI разчита фактурата…</p>
+        </div>
+
+        <form id="form-scan-confirm" class="space-y-3">
+          <div id="scan-form-fields" class="space-y-3">
+            <p class="text-xs text-slate-500">Проверете данните преди добавяне:</p>
+            <div>
+              <label for="scan-company" class="block text-xs font-medium text-slate-500 mb-1">Фирма / Обект</label>
+              <input type="text" id="scan-company" required placeholder="Име от фактурата"
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
+            </div>
+            <div>
+              <label for="scan-amount" class="block text-xs font-medium text-slate-500 mb-1">Сума (€)</label>
+              <input type="number" id="scan-amount" required min="0" step="0.01" placeholder="0.00"
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
+            </div>
+            <div>
+              <label for="scan-region" class="block text-xs font-medium text-slate-500 mb-1">Район</label>
+              <select id="scan-region" required
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
+                <option value="">— Изберете район —</option>
+              </select>
+              <input type="text" id="scan-region-other" placeholder="Име на район"
+                class="hidden w-full mt-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
+            </div>
+            <button type="submit" id="btn-scan-confirm"
+              class="w-full py-3.5 rounded-xl bg-gradient-to-r from-success to-success-dark text-white font-bold active:scale-[0.98] transition-all">
+              Добави в списъка
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

@@ -1,12 +1,14 @@
 import { loadData, saveDay, getDay } from '../storage.js';
 import { calcDaySummary, formatEUR, todayKey, generateId } from '../calculations.js';
 import {
-  DEFAULT_REGIONS,
-  OTHER_REGION_VALUE,
   LAST_REGION_KEY,
   groupDeliveriesByRegion,
-  isAllRegionsComplete
+  isAllRegionsComplete,
+  fillRegionSelect,
+  syncRegionOtherVisibility,
+  getRegionFromSelect
 } from '../regions.js';
+import { initInvoiceScan } from './invoice-scan.js';
 
 /** @type {import('../app.js').DailyViewCallbacks} */
 let callbacks = {};
@@ -20,6 +22,11 @@ export function initDailyView(cb) {
   document.getElementById('form-add-delivery')?.addEventListener('submit', handleAddDelivery);
   document.getElementById('delivery-list')?.addEventListener('change', handleToggle);
   document.getElementById('delivery-list')?.addEventListener('click', handleDelete);
+
+  initInvoiceScan({
+    onDeliveryAdded: () => callbacks.onDeliveryAdded?.(),
+    showToast
+  });
 }
 
 export function renderDailyView() {
@@ -36,46 +43,17 @@ export function renderDailyView() {
 }
 
 function populateRegionSelect() {
-  const select = document.getElementById('input-region');
-  const otherInput = document.getElementById('input-region-other');
-  if (!select) return;
-
-  const lastRegion = sessionStorage.getItem(LAST_REGION_KEY) || '';
-  select.innerHTML = '<option value="">— Изберете район —</option>';
-
-  for (const region of DEFAULT_REGIONS) {
-    const opt = document.createElement('option');
-    opt.value = region;
-    opt.textContent = region;
-    select.appendChild(opt);
-  }
-
-  const otherOpt = document.createElement('option');
-  otherOpt.value = OTHER_REGION_VALUE;
-  otherOpt.textContent = 'Други…';
-  select.appendChild(otherOpt);
-
-  if (lastRegion && [...select.options].some(o => o.value === lastRegion)) {
-    select.value = lastRegion;
-  } else if (lastRegion) {
-    select.value = OTHER_REGION_VALUE;
-    otherInput.value = lastRegion;
-    otherInput.classList.remove('hidden');
-    otherInput.required = true;
-  }
-
-  handleRegionSelectChange();
+  fillRegionSelect(
+    document.getElementById('input-region'),
+    document.getElementById('input-region-other')
+  );
 }
 
 function handleRegionSelectChange() {
-  const select = document.getElementById('input-region');
-  const otherInput = document.getElementById('input-region-other');
-  if (!select || !otherInput) return;
-
-  const isOther = select.value === OTHER_REGION_VALUE;
-  otherInput.classList.toggle('hidden', !isOther);
-  otherInput.required = isOther;
-  if (isOther) otherInput.focus();
+  syncRegionOtherVisibility(
+    document.getElementById('input-region'),
+    document.getElementById('input-region-other')
+  );
 }
 
 /** @param {import('../regions.js').RegionGroup[]} groups */
@@ -205,15 +183,10 @@ function updateSummaryBar(summary) {
 }
 
 function getSelectedRegion() {
-  const select = document.getElementById('input-region');
-  const otherInput = document.getElementById('input-region-other');
-  if (!select?.value) return '';
-
-  if (select.value === OTHER_REGION_VALUE) {
-    return otherInput?.value.trim() || '';
-  }
-
-  return select.value;
+  return getRegionFromSelect(
+    document.getElementById('input-region'),
+    document.getElementById('input-region-other')
+  );
 }
 
 async function handleAddDelivery(e) {

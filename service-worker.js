@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rozhen1-v7';
+const CACHE_NAME = 'rozhen1-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,8 @@ const ASSETS = [
   './js/auth.js',
   './js/accounts.js',
   './js/regions.js',
+  './js/gemini-config.js',
+  './js/invoice-scan.js',
   './js/firebase.js',
   './js/firebase-config.js',
   './js/storage.js',
@@ -15,6 +17,7 @@ const ASSETS = [
   './js/views/archive.js',
   './js/views/settings.js',
   './js/views/admin.js',
+  './js/views/invoice-scan.js',
   './manifest.json'
 ];
 
