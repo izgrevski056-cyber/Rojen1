@@ -6,75 +6,66 @@ Mobile-first PWA for **Rozhen 1** distribution drivers in Bulgaria.
 
 - **Дневен Курс** — Daily deliveries with summary at page bottom
 - **Месечен Архив** — Monthly archive with clickable day details
-- **Firebase Auth** — Login only (no public registration)
-- **Admin Panel** — Create driver accounts, list drivers, reset passwords
-- **Cloud Firestore** — Real-time sync per user account
+- **Username + password login** — Select user from list (no email)
+- **Admin Panel** — Create drivers, reset passwords, enable/disable accounts
+- **Firebase Realtime Database** — Real-time sync per user account (free Spark plan)
 
 ## Roles
 
 | Role | Access |
 |------|--------|
-| **Admin** | Admin tab + own delivery data (optional) |
+| **Admin** (`martin`) | Admin tab + own delivery data |
 | **Driver** | Daily run + archive for own account only |
 
 Drivers cannot self-register. Only the admin creates accounts.
 
+## Default admin login
+
+- **Username:** `martin`
+- **Password:** `rozhen1` (change after first login)
+
 ## Firebase Setup
 
-### 1. Create project & enable services
+### 1. Create project & enable Realtime Database
 
-1. [Firebase Console](https://console.firebase.google.com) → create project
-2. **Authentication → Sign-in method → Email/Password** → Enable
-3. **Firestore Database** → Create (production mode)
-4. **Project settings → Web app** → copy config into `js/firebase-config.js`
+1. [Firebase Console](https://console.firebase.google.com) → project **rozhen1**
+2. **Build → Realtime Database** → **Create Database**
+3. Choose **Test mode** (or production with rules below)
+4. Region: closest to Bulgaria (e.g. `europe-west1`)
+5. **Project settings → Web app** → copy config into `js/firebase-config.js` (include `databaseURL`)
 
-### 2. Configure admin email
-
-In **both** files, set your real admin email:
-
-- `js/firebase-config.js` → `ADMIN_EMAILS`
-- `firestore.rules` → bootstrap email in `allow create` rule
-
-### 3. Create admin Auth user
-
-Firebase Console → **Authentication → Users → Add user**
-
-Use the same email as in `ADMIN_EMAILS` and set a password.
-
-On first login, the app creates the admin Firestore profile automatically.
-
-### 4. Deploy rules & functions
+### 2. Deploy database rules
 
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase deploy --only firestore:rules,functions
+firebase deploy --only database
 ```
 
-Password reset requires the **`adminResetPassword`** Cloud Function.
+Rules file: `database.rules.json`
 
-### 5. Authorized domains
+### 3. Authorized domains
 
-Add your hosting domain under **Authentication → Settings → Authorized domains**.
+Add your hosting domain under **Authentication → Settings → Authorized domains** (if using Firebase Auth later). For GitHub Pages add `izgrevski056-cyber.github.io`.
 
 ## Admin workflow
 
-1. Log in with your admin account
+1. Log in as **martin**
 2. Open the **Админ** tab
-3. **Създай шофьор** — enter name, email, password
+3. **Създай шофьор** — username, display name, password
 4. Share credentials with the driver
 5. **Смени парола** / **Деактивирай** as needed
 
-## Firestore structure
+## Realtime Database structure
 
 ```
-users/{uid}
-  role: "admin" | "driver"
-  email, displayName, settings, disabled, createdAt
-
-users/{uid}/days/{YYYY-MM-DD}
-  deliveries: [...]
-  updatedAt
+accounts/
+  {username}/
+    username, displayName, passwordHash, role, settings, disabled, createdAt
+    days/
+      {YYYY-MM-DD}/
+        deliveries: [...]
+        updatedAt
 ```
 
 ## Quick Start (local)
@@ -90,7 +81,7 @@ npx serve .
 
 ## Security notes
 
-- Disable public registration is enforced in app logic (`ensureUserProfile`)
-- Firestore rules prevent drivers from reading other users' data
-- Only admins can create driver profiles or list all drivers
-- Password changes for other users require the Cloud Function (Admin SDK)
+- Passwords stored as SHA-256 hash in Realtime Database
+- Session stored in `sessionStorage` on the device
+- Current rules allow open read/write (suitable for small internal team)
+- Change default admin password after first login

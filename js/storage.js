@@ -1,11 +1,11 @@
 import {
-  doc,
-  setDoc,
-  collection,
-  onSnapshot,
-  writeBatch,
-  getDocs
-} from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+  ref,
+  set,
+  update,
+  onValue,
+  get,
+  remove
+} from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
 import { getFirebaseDb } from './firebase.js';
 
 const LEGACY_STORAGE_KEY = 'rozhen1_data';
@@ -68,16 +68,20 @@ export function getDay(dateKey) {
   return cache.days[dateKey] || { deliveries: [], updatedAt: new Date().toISOString() };
 }
 
+/** @param {string} username */
 function accountRef(username) {
-  return doc(getFirebaseDb(), 'accounts', username);
+  return ref(getFirebaseDb(), `accounts/${username}`);
 }
 
+/** @param {string} username */
+/** @param {string} dateKey */
 function dayRef(username, dateKey) {
-  return doc(getFirebaseDb(), 'accounts', username, 'days', dateKey);
+  return ref(getFirebaseDb(), `accounts/${username}/days/${dateKey}`);
 }
 
-function daysCollection(username) {
-  return collection(getFirebaseDb(), 'accounts', username, 'days');
+/** @param {string} username */
+function daysRef(username) {
+  return ref(getFirebaseDb(), `accounts/${username}/days`);
 }
 
 /**
@@ -103,14 +107,14 @@ export async function initUserStorage(username, role) {
       }
     };
 
-    const userUnsub = onSnapshot(
+    const userUnsub = onValue(
       accountRef(username),
       (snap) => {
         if (!snap.exists()) {
           reject(new Error('Липсва профил на потребителя.'));
           return;
         }
-        const data = snap.data();
+        const data = snap.val();
         cache.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
         cache.profile = {
           role: data.role || role,
@@ -125,17 +129,19 @@ export async function initUserStorage(username, role) {
       reject
     );
 
-    const daysUnsub = onSnapshot(
-      daysCollection(username),
+    const daysUnsub = onValue(
+      daysRef(username),
       (snap) => {
         const days = {};
-        snap.forEach((dayDoc) => {
-          const data = dayDoc.data();
-          days[dayDoc.id] = {
-            deliveries: data.deliveries || [],
-            updatedAt: data.updatedAt || new Date().toISOString()
-          };
-        });
+        if (snap.exists()) {
+          const raw = snap.val();
+          for (const [dateKey, day] of Object.entries(raw)) {
+            days[dateKey] = {
+              deliveries: day.deliveries || [],
+              updatedAt: day.updatedAt || new Date().toISOString()
+            };
+          }
+        }
         cache.days = days;
         daysReady = true;
         notify();
@@ -190,29 +196,32 @@ async function migrateLegacyLocalStorage(username) {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return;
 
-    const daysSnap = await getDocs(daysCollection(username));
-    if (!daysSnap.empty) {
+    const daysSnap = await get(daysRef(username));
+    if (daysSnap.exists()) {
       localStorage.removeItem(LEGACY_STORAGE_KEY);
       return;
     }
 
     const parsed = JSON.parse(raw);
-    const batch = writeBatch(getFirebaseDb());
 
-    batch.set(accountRef(username), {
+    await update(accountRef(username), {
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
       migratedFromLocalStorage: true,
       migratedAt: new Date().toISOString()
-    }, { merge: true });
+    });
 
+    const dayWrites = {};
     for (const [dateKey, day] of Object.entries(parsed.days || {})) {
-      batch.set(dayRef(username, dateKey), {
+      dayWrites[dateKey] = {
         deliveries: day.deliveries || [],
         updatedAt: day.updatedAt || new Date().toISOString()
-      });
+      };
     }
 
-    await batch.commit();
+    if (Object.keys(dayWrites).length) {
+      await update(daysRef(username), dayWrites);
+    }
+
     localStorage.removeItem(LEGACY_STORAGE_KEY);
     notify();
   } catch {
@@ -228,7 +237,7 @@ export async function updateSettings(settings) {
   cache.settings = merged;
   notify();
 
-  await setDoc(accountRef(currentUsername), { settings: merged }, { merge: true });
+  await update(accountRef(currentUsername), { settings: merged });
   return merged;
 }
 
@@ -241,21 +250,18 @@ export async function saveDay(dateKey, dayRecord) {
   cache.days[dateKey] = record;
   notify();
 
-  await setDoc(dayRef(currentUsername, dateKey), record);
+  await set(dayRef(currentUsername, dateKey), record);
 }
 
 export async function clearAllData() {
   if (!currentUsername) throw new Error('Not signed in');
 
-  const daysSnap = await getDocs(daysCollection(currentUsername));
-  const batch = writeBatch(getFirebaseDb());
-  daysSnap.forEach((dayDoc) => batch.delete(dayDoc.ref));
-  batch.set(accountRef(currentUsername), {
+  await remove(daysRef(currentUsername));
+  await update(accountRef(currentUsername), {
     settings: DEFAULT_SETTINGS,
     clearedAt: new Date().toISOString()
-  }, { merge: true });
+  });
 
-  await batch.commit();
   cache = getDefaultData();
   notify();
 }

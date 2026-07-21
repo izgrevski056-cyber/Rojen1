@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "accounts": {
+      ".read": true,
+      ".write": true,
+      "$username": {
+        "days": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    }
+  }
+}

@@ -1,11 +1,9 @@
 import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  getDocs,
-  updateDoc
-} from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+  ref,
+  get,
+  set,
+  update
+} from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
 import { getFirebaseDb } from './firebase.js';
 import { DEFAULT_SETTINGS } from './storage.js';
 
@@ -36,19 +34,31 @@ export function isAdminUsername(username) {
   return normalizeUsername(username) === ADMIN_USERNAME;
 }
 
+/** @param {string} username */
 function accountRef(username) {
-  return doc(getFirebaseDb(), 'accounts', normalizeUsername(username));
+  return ref(getFirebaseDb(), `accounts/${normalizeUsername(username)}`);
+}
+
+/** @param {Record<string, unknown>} account */
+function accountProfile(username, account) {
+  const { days, passwordHash, ...rest } = account;
+  return {
+    username,
+    displayName: /** @type {string} */ (rest.displayName) || username,
+    role: rest.role === 'admin' ? 'admin' : 'driver',
+    disabled: !!rest.disabled,
+    createdAt: /** @type {string | undefined} */ (rest.createdAt)
+  };
 }
 
 /**
  * @returns {Promise<void>}
  */
 export async function ensureBootstrapAdmin() {
-  const ref = accountRef(ADMIN_USERNAME);
-  const snap = await getDoc(ref);
+  const snap = await get(accountRef(ADMIN_USERNAME));
   if (snap.exists()) return;
 
-  await setDoc(ref, {
+  await set(accountRef(ADMIN_USERNAME), {
     username: ADMIN_USERNAME,
     displayName: 'Мартин',
     passwordHash: await hashPassword(DEFAULT_ADMIN_PASSWORD),
@@ -64,10 +74,12 @@ export async function ensureBootstrapAdmin() {
  */
 export async function listLoginUsers() {
   await ensureBootstrapAdmin();
-  const snap = await getDocs(collection(getFirebaseDb(), 'accounts'));
+  const snap = await get(ref(getFirebaseDb(), 'accounts'));
+  if (!snap.exists()) return [];
 
-  return snap.docs
-    .map(d => ({ username: d.id, ...d.data() }))
+  const accounts = snap.val();
+  return Object.entries(accounts)
+    .map(([username, data]) => accountProfile(username, /** @type {Record<string, unknown>} */ (data)))
     .filter(u => !u.disabled)
     .sort((a, b) => {
       if (a.username === ADMIN_USERNAME) return -1;
@@ -81,10 +93,12 @@ export async function listLoginUsers() {
  */
 export async function listAllAccounts() {
   await ensureBootstrapAdmin();
-  const snap = await getDocs(collection(getFirebaseDb(), 'accounts'));
+  const snap = await get(ref(getFirebaseDb(), 'accounts'));
+  if (!snap.exists()) return [];
 
-  return snap.docs
-    .map(d => ({ username: d.id, ...d.data() }))
+  const accounts = snap.val();
+  return Object.entries(accounts)
+    .map(([username, data]) => accountProfile(username, /** @type {Record<string, unknown>} */ (data)))
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username, 'bg'));
 }
 
@@ -97,10 +111,10 @@ export async function verifyLogin(username, password) {
   const key = normalizeUsername(username);
   if (!key) throw new Error('Изберете потребител.');
 
-  const snap = await getDoc(accountRef(key));
+  const snap = await get(accountRef(key));
   if (!snap.exists()) throw new Error('Грешен потребител или парола.');
 
-  const data = snap.data();
+  const data = snap.val();
   if (data.disabled) throw new Error('Този акаунт е деактивиран.');
 
   const hash = await hashPassword(password);
@@ -134,11 +148,10 @@ export async function createUserAccount(input) {
     throw new Error('Потребителят martin е запазен за администратора.');
   }
 
-  const ref = accountRef(username);
-  const existing = await getDoc(ref);
+  const existing = await get(accountRef(username));
   if (existing.exists()) throw new Error('Това потребителско име вече съществува.');
 
-  await setDoc(ref, {
+  await set(accountRef(username), {
     username,
     displayName,
     passwordHash: await hashPassword(password),
@@ -161,11 +174,10 @@ export async function updateUserPassword(username, newPassword) {
     throw new Error('Паролата трябва да е поне 4 символа.');
   }
 
-  const ref = accountRef(key);
-  const snap = await getDoc(ref);
+  const snap = await get(accountRef(key));
   if (!snap.exists()) throw new Error('Потребителят не е намерен.');
 
-  await updateDoc(ref, {
+  await update(accountRef(key), {
     passwordHash: await hashPassword(newPassword),
     updatedAt: new Date().toISOString()
   });
@@ -181,7 +193,7 @@ export async function setUserDisabled(username, disabled) {
     throw new Error('Не може да деактивирате администратора.');
   }
 
-  await updateDoc(accountRef(key), {
+  await update(accountRef(key), {
     disabled,
     updatedAt: new Date().toISOString()
   });
