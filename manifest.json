@@ -1,6 +1,6 @@
 {
-  "name": "Rozhen 1 — Доставки",
-  "short_name": "Rozhen 1",
+  "name": "Рожен 1 — Доставки",
+  "short_name": "Рожен 1",
   "description": "Дневен курс и месечен архив за дистрибуционен шофьор",
   "start_url": "./index.html",
   "display": "standalone",
