@@ -225,10 +225,6 @@
   line-height: 1;
 }
 
-.scan-loading {
-  text-align: center;
-}
-
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

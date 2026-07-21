@@ -8,7 +8,6 @@ import {
   syncRegionOtherVisibility,
   getRegionFromSelect
 } from '../regions.js';
-import { initInvoiceScan } from './invoice-scan.js';
 
 /** @type {import('../app.js').DailyViewCallbacks} */
 let callbacks = {};
@@ -22,11 +21,6 @@ export function initDailyView(cb) {
   document.getElementById('form-add-delivery')?.addEventListener('submit', handleAddDelivery);
   document.getElementById('delivery-list')?.addEventListener('change', handleToggle);
   document.getElementById('delivery-list')?.addEventListener('click', handleDelete);
-
-  initInvoiceScan({
-    onDeliveryAdded: () => callbacks.onDeliveryAdded?.(),
-    showToast
-  });
 }
 
 export function renderDailyView() {
