@@ -1,4 +1,4 @@
-import { geminiApiKey, isGeminiConfigured } from './gemini-config.js';
+import { getGeminiApiKey, isGeminiConfigured } from './gemini-config.js';
 
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const MAX_IMAGE_DIMENSION = 1600;
@@ -23,7 +23,7 @@ Example: {"companyName":"Хотел Морско Оазис","amountEur":124.50}
  */
 export async function parseInvoiceImage(file) {
   if (!isGeminiConfigured()) {
-    throw new Error('Липсва Gemini API ключ. Добавете го в js/gemini-config.js');
+    throw new Error('Липсва Gemini API ключ. Добавете го в Настройки (⚙️).');
   }
 
   if (!file?.type?.startsWith('image/')) {
@@ -34,7 +34,7 @@ export async function parseInvoiceImage(file) {
   const base64 = await blobToBase64(prepared);
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(geminiApiKey)}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(getGeminiApiKey())}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -56,7 +56,7 @@ export async function parseInvoiceImage(file) {
   if (!response.ok) {
     const errText = await response.text();
     if (response.status === 400 && errText.includes('API key')) {
-      throw new Error('Невалиден Gemini API ключ. Проверете js/gemini-config.js');
+      throw new Error('Невалиден Gemini API ключ. Проверете в Настройки (⚙️).');
     }
     if (response.status === 429) {
       throw new Error('Твърде много заявки. Опитайте след минута.');

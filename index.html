@@ -479,6 +479,19 @@
               class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
           </div>
 
+          <div class="border-t border-slate-100 pt-4">
+            <label for="setting-gemini-key" class="block text-sm font-medium text-slate-600 mb-1">
+              AI ключ за фактури
+              <span class="text-accent-amber font-semibold text-xs ml-1">(експеримент)</span>
+            </label>
+            <input type="password" id="setting-gemini-key" autocomplete="off" placeholder="AIza… от Google AI Studio"
+              class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-cream/50 focus:outline-none focus:ring-2 focus:ring-navy/30 text-sm">
+            <p id="setting-gemini-status" class="text-xs text-slate-400 mt-1">Ключът се пази само на това устройство</p>
+            <p class="text-xs text-slate-400 mt-1">
+              Безплатен ключ: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-navy underline">aistudio.google.com/apikey</a>
+            </p>
+          </div>
+
           <div class="pt-2 space-y-3">
             <button type="submit"
               class="w-full py-3.5 rounded-xl bg-gradient-to-r from-success to-success-dark text-white font-bold shadow-md active:scale-[0.98] transition-all">

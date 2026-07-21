@@ -1,5 +1,6 @@
 import { loadData, updateSettings, clearAllData, DEFAULT_SETTINGS } from '../storage.js';
 import { handleLogout } from '../auth.js';
+import { getGeminiApiKey, setGeminiApiKey, isGeminiConfigured } from '../gemini-config.js';
 
 /** @type {() => void} */
 let onSettingsSaved = () => {};
@@ -25,6 +26,17 @@ function openModal() {
   document.getElementById('setting-bonus').value = data.settings.bonusPercent;
   document.getElementById('setting-allowance').value = data.settings.dailyAllowance;
   document.getElementById('setting-voucher').value = data.settings.monthlyVoucher;
+  document.getElementById('setting-gemini-key').value = getGeminiApiKey();
+
+  const geminiStatus = document.getElementById('setting-gemini-status');
+  if (geminiStatus) {
+    geminiStatus.textContent = isGeminiConfigured()
+      ? '✓ AI ключът е зададен на това устройство'
+      : 'Няма зададен ключ — снимането на фактури няма да работи';
+    geminiStatus.className = isGeminiConfigured()
+      ? 'text-xs text-success-dark mt-1'
+      : 'text-xs text-slate-400 mt-1';
+  }
 
   document.getElementById('modal-settings').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -43,6 +55,9 @@ async function handleSave(e) {
   const monthlyVoucher = parseFloat(document.getElementById('setting-voucher').value);
 
   if ([bonusPercent, dailyAllowance, monthlyVoucher].some(v => isNaN(v) || v < 0)) return;
+
+  const geminiKey = document.getElementById('setting-gemini-key')?.value ?? '';
+  setGeminiApiKey(geminiKey);
 
   try {
     await updateSettings({ bonusPercent, dailyAllowance, monthlyVoucher });

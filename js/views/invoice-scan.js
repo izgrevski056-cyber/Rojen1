@@ -34,7 +34,7 @@ export function initInvoiceScan(cb) {
 
 function handleScanClick() {
   if (!isGeminiConfigured()) {
-    callbacks.showToast('Добавете Gemini API ключ в js/gemini-config.js');
+    callbacks.showToast('Добавете Gemini API ключ в Настройки (⚙️)');
     return;
   }
 

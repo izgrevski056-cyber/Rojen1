@@ -1,15 +1,30 @@
 /**
- * Gemini API key for invoice scanning (Google AI Studio).
- * Copy from gemini-config.example.js and paste your key here.
+ * Gemini API key — stored locally on device (Settings), never in GitHub.
+ * Get a free key: https://aistudio.google.com/apikey
  */
-export const geminiApiKey = 'YOUR_GEMINI_API_KEY';
+export const GEMINI_KEY_STORAGE = 'rozhen1_gemini_api_key';
 
-export function isGeminiConfigured() {
-  return Boolean(
-    geminiApiKey &&
-    !geminiApiKey.includes('YOUR_') &&
-    geminiApiKey.length > 10
-  );
+export function getGeminiApiKey() {
+  try {
+    return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+  } catch {
+    return '';
+  }
 }
 
-export default { geminiApiKey, isGeminiConfigured };
+/** @param {string} key */
+export function setGeminiApiKey(key) {
+  const trimmed = key.trim();
+  if (!trimmed) {
+    localStorage.removeItem(GEMINI_KEY_STORAGE);
+    return;
+  }
+  localStorage.setItem(GEMINI_KEY_STORAGE, trimmed);
+}
+
+export function isGeminiConfigured() {
+  const key = getGeminiApiKey();
+  return Boolean(key && key.length > 10 && !key.includes('YOUR_'));
+}
+
+export default { getGeminiApiKey, setGeminiApiKey, isGeminiConfigured, GEMINI_KEY_STORAGE };
