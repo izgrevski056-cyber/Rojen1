@@ -1,0 +1,25 @@
+{
+  "name": "Rozhen 1 — Доставки",
+  "short_name": "Rozhen 1",
+  "description": "Дневен курс и месечен архив за дистрибуционен шофьор",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f1ea",
+  "theme_color": "#1e3a5f",
+  "lang": "bg",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
