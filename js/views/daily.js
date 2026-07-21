@@ -143,11 +143,18 @@ function renderDeliveryCard(d) {
   return `
     <article class="delivery-card ${d.delivered ? 'delivered' : 'bg-white'} rounded-2xl shadow-card p-4 border border-navy/5 transition-all duration-300"
       data-id="${d.id}">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <div class="flex-1 min-w-0">
           <h3 class="delivery-name font-semibold text-navy truncate">${escapeHtml(d.clientName)}</h3>
           <p class="delivery-amount text-lg font-bold mt-0.5 ${d.delivered ? '' : 'text-accent-coral'}">${formatEUR(d.amount)}</p>
         </div>
+        <button type="button" data-action="delete" data-id="${d.id}" aria-label="Изтрий спирка"
+          class="btn-delete-delivery shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
         <label class="toggle-switch" aria-label="Маркирай като доставено">
           <input type="checkbox" ${d.delivered ? 'checked' : ''} data-action="toggle" data-id="${d.id}">
           <span class="toggle-slider"></span>
@@ -161,10 +168,6 @@ function renderDeliveryCard(d) {
           Доставено
         </div>
       ` : ''}
-      <button type="button" data-action="delete" data-id="${d.id}"
-        class="mt-2 text-xs text-slate-400 hover:text-red-500 transition-colors">
-        Премахни
-      </button>
     </article>
   `;
 }
@@ -243,11 +246,17 @@ async function handleToggle(e) {
 }
 
 async function handleDelete(e) {
-  if (e.target.dataset.action !== 'delete') return;
+  const btn = e.target.closest('[data-action="delete"]');
+  if (!btn) return;
 
-  const id = e.target.dataset.id;
+  const id = btn.dataset.id;
   const dateKey = todayKey();
   const day = getDay(dateKey);
+  const delivery = day.deliveries.find(d => d.id === id);
+  if (!delivery) return;
+
+  if (!confirm(`Изтриване на „${delivery.clientName}“ от списъка?`)) return;
+
   day.deliveries = day.deliveries.filter(d => d.id !== id);
 
   try {
