@@ -1,7 +1,7 @@
 {
   "name": "Рожен 1 — Доставки",
   "short_name": "Рожен 1",
-  "description": "Дневен курс и месечен архив за дистрибуционен шофьор",
+  "description": "Дневен курс и дистрибуция — шоколади, бонбони и сладки",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

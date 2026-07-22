@@ -1,8 +1,11 @@
-const CACHE_NAME = 'rojen1-v19';
+const CACHE_NAME = 'rojen1-v20';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './manifest.json',
   './js/app.js',
   './js/version.js',
   './js/theme.js',
@@ -17,8 +20,7 @@ const ASSETS = [
   './js/views/daily.js',
   './js/views/archive.js',
   './js/views/settings.js',
-  './js/views/admin.js',
-  './manifest.json'
+  './js/views/admin.js'
 ];
 
 self.addEventListener('install', (event) => {
