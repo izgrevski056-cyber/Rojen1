@@ -6,6 +6,7 @@ import { initAdminView, renderAdminView } from './views/admin.js';
 import { initAuth } from './auth.js';
 import { onDataChange } from './storage.js';
 import { APP_VERSION_LABEL } from './version.js';
+import { initTheme } from './theme.js';
 
 let activeView = 'daily';
 let appInitialized = false;
@@ -100,6 +101,7 @@ function initAppShell(role) {
 }
 
 function init() {
+  initTheme();
   showVersionBadge();
   preventPinchZoom();
 

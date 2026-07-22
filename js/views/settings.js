@@ -1,5 +1,6 @@
 import { loadData, updateSettings, clearAllData, DEFAULT_SETTINGS } from '../storage.js';
 import { handleLogout } from '../auth.js';
+import { setTheme, updateThemeButtonStates } from '../theme.js';
 
 /** @type {() => void} */
 let onSettingsSaved = () => {};
@@ -18,6 +19,9 @@ export function initSettingsView({ onSaved }) {
     closeModal();
     handleLogout();
   });
+
+  document.getElementById('theme-light')?.addEventListener('click', () => setTheme('light'));
+  document.getElementById('theme-dark')?.addEventListener('click', () => setTheme('dark'));
 }
 
 function openModal() {
@@ -25,6 +29,7 @@ function openModal() {
   document.getElementById('setting-bonus').value = data.settings.bonusPercent;
   document.getElementById('setting-allowance').value = data.settings.dailyAllowance;
   document.getElementById('setting-voucher').value = data.settings.monthlyVoucher;
+  updateThemeButtonStates();
 
   document.getElementById('modal-settings').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
