@@ -1,9 +1,10 @@
-const CACHE_NAME = 'rojen1-v15';
+const CACHE_NAME = 'rojen1-v16';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
   './js/app.js',
+  './js/version.js',
   './js/auth.js',
   './js/accounts.js',
   './js/regions.js',

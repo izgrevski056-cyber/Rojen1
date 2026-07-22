@@ -5,6 +5,7 @@ import { initSettingsView } from './views/settings.js';
 import { initAdminView, renderAdminView } from './views/admin.js';
 import { initAuth } from './auth.js';
 import { onDataChange } from './storage.js';
+import { APP_VERSION_LABEL } from './version.js';
 
 let activeView = 'daily';
 let appInitialized = false;
@@ -62,6 +63,24 @@ function registerServiceWorker() {
   }
 }
 
+function showVersionBadge() {
+  const el = document.getElementById('app-version');
+  if (el) el.textContent = APP_VERSION_LABEL;
+}
+
+function preventPinchZoom() {
+  const blockMultiTouch = (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  };
+
+  document.addEventListener('touchmove', blockMultiTouch, { passive: false });
+  document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+}
+
 function initAppShell(role) {
   if (appInitialized) return;
   appInitialized = true;
@@ -81,6 +100,9 @@ function initAppShell(role) {
 }
 
 function init() {
+  showVersionBadge();
+  preventPinchZoom();
+
   window.addEventListener('error', (event) => {
     const msg = event.message || 'Грешка при зареждане на приложението.';
     const errEl = document.getElementById('auth-error');

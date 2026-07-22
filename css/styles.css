@@ -13,9 +13,10 @@ body {
   overflow-x: hidden;
   max-width: 100%;
   overscroll-behavior: none;
-  touch-action: pan-y;
+  touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   -webkit-overflow-scrolling: touch;
+  -webkit-touch-callout: none;
 }
 
 #app,
@@ -271,6 +272,20 @@ body {
 .region-header-icon {
   font-size: 0.875rem;
   line-height: 1;
+}
+
+.app-version {
+  position: fixed;
+  right: max(0.5rem, env(safe-area-inset-right));
+  bottom: max(0.35rem, env(safe-area-inset-bottom));
+  z-index: 20;
+  margin: 0;
+  font-size: 0.625rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: rgba(100, 116, 139, 0.55);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* Scrollbar styling */
