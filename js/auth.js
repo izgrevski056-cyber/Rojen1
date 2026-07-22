@@ -107,6 +107,11 @@ async function completeLogin(session) {
   showApp(session);
   onAuthReady(session);
   hideLoading();
+  refreshActiveViewAfterLogin();
+}
+
+function refreshActiveViewAfterLogin() {
+  document.dispatchEvent(new CustomEvent('rojen1:storage-ready'));
 }
 
 export async function handleLogout() {

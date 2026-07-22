@@ -96,6 +96,7 @@ function initAppShell(role) {
   }
 
   onDataChange(refreshActiveView);
+  document.addEventListener('rojen1:storage-ready', refreshActiveView);
   updateHeaderDate(todayKey());
   renderDailyView();
 }

@@ -1,4 +1,4 @@
-import { loadData, saveDay, getDay } from '../storage.js';
+import { loadData, saveDay, getDay, getCurrentUsername } from '../storage.js';
 import { calcDaySummary, formatEUR, todayKey, generateId } from '../calculations.js';
 import {
   LAST_REGION_KEY,
@@ -36,7 +36,22 @@ export function renderDailyView() {
   renderDeliveryList(groups);
   updateSummaryBar(summary);
   updateWaybillButton(day.deliveries.length);
+  updateSyncInfo(day.deliveries.length);
   callbacks.onDateUpdate?.(dateKey);
+}
+
+function updateSyncInfo(todayCount) {
+  const el = document.getElementById('daily-sync-info');
+  if (!el) return;
+
+  const username = getCurrentUsername();
+  if (!username) {
+    el.classList.add('hidden');
+    return;
+  }
+
+  el.textContent = `Акаунт: ${username} · ${todayCount} спирки днес · данните се споделят между телефон и компютър`;
+  el.classList.remove('hidden');
 }
 
 function updateWaybillButton(deliveryCount) {
