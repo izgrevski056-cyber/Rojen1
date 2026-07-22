@@ -8,6 +8,7 @@ import {
   syncRegionOtherVisibility,
   getRegionFromSelect
 } from '../regions.js';
+import { formatWaybillText, copyTextToClipboard } from '../waybill.js';
 
 /** @type {import('../app.js').DailyViewCallbacks} */
 let callbacks = {};
@@ -21,6 +22,7 @@ export function initDailyView(cb) {
   document.getElementById('form-add-delivery')?.addEventListener('submit', handleAddDelivery);
   document.getElementById('delivery-list')?.addEventListener('change', handleToggle);
   document.getElementById('delivery-list')?.addEventListener('click', handleDelete);
+  document.getElementById('btn-copy-waybill')?.addEventListener('click', handleCopyWaybill);
 }
 
 export function renderDailyView() {
@@ -33,7 +35,14 @@ export function renderDailyView() {
   renderRegionProgress(groups);
   renderDeliveryList(groups);
   updateSummaryBar(summary);
+  updateWaybillButton(day.deliveries.length);
   callbacks.onDateUpdate?.(dateKey);
+}
+
+function updateWaybillButton(deliveryCount) {
+  const btn = document.getElementById('btn-copy-waybill');
+  if (!btn) return;
+  btn.classList.toggle('hidden', deliveryCount === 0);
 }
 
 function populateRegionSelect() {
@@ -223,6 +232,29 @@ async function handleAddDelivery(e) {
     callbacks.onDeliveryAdded?.();
   } catch (err) {
     showToast(err.message || 'Грешка при запис.');
+  }
+}
+
+async function handleCopyWaybill() {
+  const dateKey = todayKey();
+  const data = loadData();
+  const day = getDay(dateKey);
+
+  if (!day.deliveries.length) {
+    showToast('Няма спирки за копиране.');
+    return;
+  }
+
+  const text = formatWaybillText(day.deliveries, {
+    dateKey,
+    driverName: data.profile?.displayName || data.profile?.username || ''
+  });
+
+  try {
+    await copyTextToClipboard(text);
+    showToast('Копирано! Поставете във Viber и изпратете.');
+  } catch {
+    showToast('Неуспешно копиране. Опитайте отново.');
   }
 }
 

@@ -184,9 +184,15 @@
 
         <!-- Delivery List -->
         <div>
-          <div class="flex items-center justify-between mb-2 px-1">
-            <h2 class="text-sm font-bold text-navy">Спирки за днес</h2>
-            <span id="delivery-count" class="text-xs font-medium text-slate-500 bg-white px-2 py-1 rounded-lg shadow-sm">0</span>
+          <div class="flex items-center justify-between mb-2 px-1 gap-2">
+            <h2 class="text-sm font-bold text-navy shrink-0">Спирки за днес</h2>
+            <div class="flex items-center gap-2 min-w-0">
+              <button type="button" id="btn-copy-waybill"
+                class="hidden text-xs font-semibold text-navy bg-white border border-navy/15 px-2.5 py-1.5 rounded-lg shadow-sm hover:bg-cream active:scale-[0.98] transition-all whitespace-nowrap">
+                Копирай товарителница
+              </button>
+              <span id="delivery-count" class="text-xs font-medium text-slate-500 bg-white px-2 py-1 rounded-lg shadow-sm shrink-0">0</span>
+            </div>
           </div>
           <div id="region-progress" class="hidden mb-3" aria-label="Прогрес по райони"></div>
           <ul id="delivery-list" class="space-y-4" aria-live="polite"></ul>
