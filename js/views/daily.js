@@ -50,7 +50,7 @@ function updateSyncInfo(todayCount) {
     return;
   }
 
-  el.textContent = `Акаунт: ${username} · ${todayCount} спирки днес · данните се споделят между телефон и компютър`;
+  el.textContent = `Акаунт: ${username} · ${todayCount} спирки днес`;
   el.classList.remove('hidden');
 }
 
