@@ -1,6 +1,8 @@
 import { groupDeliveriesByRegion } from './regions.js';
 import { formatDisplayDate, formatEUR } from './calculations.js';
 
+const LINE = '━━━━━━━━━━━━━━━━━━━━━━';
+
 /**
  * @param {import('./storage.js').Delivery[]} deliveries
  * @param {{ dateKey: string, driverName?: string }} options
@@ -13,7 +15,11 @@ export function formatWaybillText(deliveries, { dateKey, driverName = '' }) {
   const groups = groupDeliveriesByRegion(deliveries);
   const totalAmount = deliveries.reduce((sum, d) => sum + d.amount, 0);
   const lines = [
-    'ТОВАРИТЕЛНИЦА — Рожен 1',
+    LINE,
+    'ТОВАРИТЕЛНИЦА',
+    'Рожен 1',
+    LINE,
+    '',
     `Дата: ${formatDisplayDate(dateKey)}`,
   ];
 
@@ -24,15 +30,21 @@ export function formatWaybillText(deliveries, { dateKey, driverName = '' }) {
   lines.push('');
 
   for (const group of groups) {
-    lines.push(`${group.region.toUpperCase()}:`);
-    group.deliveries.forEach((delivery, index) => {
-      lines.push(`${index + 1}. ${delivery.clientName} — ${formatEUR(delivery.amount)}`);
-    });
+    lines.push(`📍 ${group.region.toUpperCase()}`);
+    lines.push('──────────────────────');
     lines.push('');
+
+    group.deliveries.forEach((delivery, index) => {
+      lines.push(`${index + 1}. ${delivery.clientName}`);
+      lines.push(`   ${formatEUR(delivery.amount)}`);
+      lines.push('');
+    });
   }
 
-  lines.push('---');
-  lines.push(`Общо: ${deliveries.length} спирки | ${formatEUR(totalAmount)}`);
+  lines.push(LINE);
+  lines.push(`ОБЩО: ${deliveries.length} спирки`);
+  lines.push(`СУМА: ${formatEUR(totalAmount)}`);
+  lines.push(LINE);
 
   return lines.join('\n').trim();
 }
