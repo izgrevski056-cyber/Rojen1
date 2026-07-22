@@ -35,4 +35,4 @@ Write-Host "Actions: https://github.com/$username/$repoName/actions"
 Write-Host "Pages:   https://github.com/$username/$repoName/settings/pages"
 Write-Host ""
 Write-Host "After the deploy workflow finishes (~1 min), live site:"
-Write-Host "  https://$username.github.io/$repoName/" -ForegroundColor Cyan
+Write-Host "  https://rojen1.github.io/Rojen1/" -ForegroundColor Cyan

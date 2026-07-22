@@ -46,7 +46,7 @@ Rules file: `database.rules.json`
 
 ### 3. Authorized domains
 
-Add your hosting domain under **Authentication → Settings → Authorized domains** (if using Firebase Auth later). For GitHub Pages add `izgrevski056-cyber.github.io`.
+Add your hosting domain under **Authentication → Settings → Authorized domains** (if using Firebase Auth later). For GitHub Pages add `rojen1.github.io`.
 
 ## Admin workflow
 
