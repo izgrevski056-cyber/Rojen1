@@ -3,6 +3,28 @@
   to { transform: rotate(360deg); }
 }
 
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+#app,
+#auth-screen,
+#loading-screen {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 .animate-spin {
   animation: spin 0.8s linear infinite;
 }
